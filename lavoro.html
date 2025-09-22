@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcolatore Orario di Lavoro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .card {
+            background-color: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            max-width: 42rem;
+            width: 100%;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .input-group label {
+            font-weight: 600;
+            color: #4b5563;
+        }
+        .input-group input {
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            border: 2px solid #e5e7eb;
+            transition: border-color 0.3s ease-in-out;
+            font-size: 1rem;
+            color: #1f2937;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+        }
+        .button {
+            background-color: #3b82f6;
+            color: white;
+            font-weight: 700;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: #2563eb;
+            transform: translateY(-2px);
+        }
+        .result-box {
+            background-color: #e0f2fe;
+            border: 2px solid #7dd3fc;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            animation: scaleIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .result-box h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0c4a6e;
+        }
+        .result-box p {
+            margin-top: 0.5rem;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #0369a1;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="card">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Calcola il tuo Orario di Uscita</h1>
+        <p class="text-center text-gray-500 mb-8">Inserisci i tuoi dati per scoprire l'orario di uscita minimo.</p>
+
+        <div class="space-y-6">
+            <div class="input-group">
+                <label for="ingresso">Orario di Ingresso*</label>
+                <input type="time" id="ingresso" required>
+            </div>
+
+            <div class="input-group">
+                <label for="inizioPausa">Inizio Pausa (opzionale)</label>
+                <input type="time" id="inizioPausa">
+            </div>
+
+            <div class="input-group">
+                <label for="finePausa">Fine Pausa (opzionale)</label>
+                <input type="time" id="finePausa">
+            </div>
+
+            <button onclick="calcolaUscita()" class="w-full button">
+                Calcola Orario di Uscita
+            </button>
+        </div>
+
+        <div id="result" class="mt-8 hidden">
+            <!-- Il risultato verrà visualizzato qui -->
+        </div>
+
+        <div id="error-message" class="mt-4 text-red-500 text-center font-semibold hidden">
+            <!-- Messaggi di errore verranno visualizzati qui -->
+        </div>
+
+    </div>
+
+    <script>
+        function calcolaUscita() {
+            const ingressoInput = document.getElementById('ingresso');
+            const inizioPausaInput = document.getElementById('inizioPausa');
+            const finePausaInput = document.getElementById('finePausa');
+            const resultDiv = document.getElementById('result');
+            const errorDiv = document.getElementById('error-message');
+
+            // Nasconde i risultati e gli errori precedenti
+            resultDiv.classList.add('hidden');
+            errorDiv.classList.add('hidden');
+
+            const ingressoValue = ingressoInput.value;
+            const inizioPausaValue = inizioPausaInput.value;
+            const finePausaValue = finePausaInput.value;
+
+            // Controlla se l'orario di ingresso è stato inserito
+            if (!ingressoValue) {
+                errorDiv.textContent = "L'orario di ingresso è obbligatorio.";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            const MIN_LAVORO_MINUTI = 8 * 60; // 8 ore in minuti
+            const MIN_PAUSA_MINUTI = 30; // 30 minuti di pausa minima
+
+            // Converte l'orario di ingresso in minuti totali
+            const [ingressoH, ingressoM] = ingressoValue.split(':').map(Number);
+            const ingressoMinutiTotali = ingressoH * 60 + ingressoM;
+
+            let pausaMinuti = 0;
+
+            // Calcola la durata della pausa se entrambi gli orari sono stati inseriti
+            if (inizioPausaValue && finePausaValue) {
+                const [inizioPausaH, inizioPausaM] = inizioPausaValue.split(':').map(Number);
+                const [finePausaH, finePausaM] = finePausaValue.split(':').map(Number);
+
+                const inizioPausaMinutiTotali = inizioPausaH * 60 + inizioPausaM;
+                const finePausaMinutiTotali = finePausaH * 60 + finePausaM;
+
+                if (finePausaMinutiTotali < inizioPausaMinutiTotali) {
+                    errorDiv.textContent = "L'orario di fine pausa deve essere dopo l'orario di inizio pausa.";
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                pausaMinuti = finePausaMinutiTotali - inizioPausaMinutiTotali;
+                // Se la pausa calcolata è inferiore a 30 minuti, si considera la pausa minima
+                if (pausaMinuti < MIN_PAUSA_MINUTI) {
+                    pausaMinuti = MIN_PAUSA_MINUTI;
+                }
+            } else {
+                // Se la pausa non è inserita, si considera la pausa minima
+                pausaMinuti = MIN_PAUSA_MINUTI;
+            }
+
+            // Calcola l'orario di uscita minimo
+            const uscitaMinutiTotali = ingressoMinutiTotali + MIN_LAVORO_MINUTI + pausaMinuti;
+
+            // Converte i minuti totali in formato ora:minuti
+            const uscitaH = Math.floor(uscitaMinutiTotali / 60) % 24;
+            const uscitaM = uscitaMinutiTotali % 60;
+
+            const uscitaFormatted = `${String(uscitaH).padStart(2, '0')}:${String(uscitaM).padStart(2, '0')}`;
+
+            // Mostra il risultato
+            resultDiv.innerHTML = `
+                <div class="result-box">
+                    <h3>Orario di uscita minimo:</h3>
+                    <p>${uscitaFormatted}</p>
+                </div>
+            `;
+            resultDiv.classList.remove('hidden');
+        }
+    </script>
+
+</body>
+</html>
