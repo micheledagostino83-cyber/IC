@@ -3,116 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ricavi Mercato Retail</title>
-    <!-- Carica Tailwind CSS per lo stile moderno e responsivo -->
+    <title>Ricavi Mercato Retail - Dashboard Completa</title>
+    <!-- Carica Tailwind CSS e D3.js -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Carica D3.js per visualizzazioni avanzate -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <!-- Icone Lucide per frecce (usate per l'indicazione YoY) -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         /* Stile di base per il tema chiaro */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #ffffff; /* Sfondo bianco */
-            color: #1f2937; /* Testo scuro */
+            background-color: #ffffff;
+            color: #1f2937;
         }
-        /* Stile per i tooltip di D3 */
-        .tooltip {
-            position: absolute;
-            text-align: center;
-            padding: 8px;
-            font: 14px sans-serif;
-            background: rgba(255, 255, 255, 0.9); /* Sfondo chiaro del tooltip */
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            pointer-events: none;
-            color: #1f2937; /* Testo scuro */
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
-            z-index: 100;
-        }
-
-        /* Stili specifici per la tabella integrata */
-        .data-table th {
-            background-color: #e5e7eb; /* Grigio chiaro per le intestazioni */
-            color: #1f2937; /* Testo scuro */
-            padding: 12px 8px;
-            border-bottom: 2px solid #9ca3af;
-            text-align: center;
-        }
-
-        .data-table td {
-            padding: 10px 8px;
-            text-align: center;
-            border-bottom: 1px solid #d1d5db;
-            /* Aggiunto padding orizzontale alle celle */
-            padding-left: 1rem; /* px-4 */
-            padding-right: 1rem; /* px-4 */
-        }
-
-        .row-bd {
-            background-color: #f9fafb; /* Sfondo Banche Dati molto chiaro */
-        }
-
-        .row-lei {
-            background-color: #ffffff; /* Sfondo Servizio LEI bianco */
-        }
-        
-        .row-total {
-            background-color: #e0f2f1; /* Sfondo Totale ciano chiaro */
-            font-weight: bold;
-            color: #1f2937; /* Testo scuro */
-        }
-
-        .positive {
-            color: #10b981; /* Verde (immutato) */
-        }
-
-        .negative {
-            color: #ef4444; /* Rosso (immutato) */
-        }
-
-        /* Funzione per colorare le percentuali */
+        /* Stili della Tabella e Contesto Dati */
+        .data-table th { background-color: #e5e7eb; color: #1f2937; padding: 12px 8px; border-bottom: 2px solid #9ca3af; text-align: center; }
+        .data-table td { padding: 10px 1rem; text-align: center; border-bottom: 1px solid #d1d5db; }
+        .row-total { background-color: #e0f2f1; font-weight: bold; color: #1f2937; }
+        .row-bd, .row-consultazione, .row-pratiche { background-color: #f9fafb; }
+        .row-lei, .row-canoni { background-color: #ffffff; }
+        .positive { color: #10b981; }
+        .negative { color: #ef4444; }
         .positive-text { color: #10b981; }
         .negative-text { color: #ef4444; }
+        .bar-shadow { filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1)); transition: filter 0.3s; }
+        .bar-shadow:hover { filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2)); }
+        .chart-legend { display: flex; justify-content: center; margin-top: 1rem; gap: 20px; padding: 10px; background-color: #f9fafb; border-radius: 8px; }
+        .legend-item { display: flex; align-items: center; font-size: 14px; }
+        .legend-color { width: 12px; height: 12px; border-radius: 4px; margin-right: 8px; border: 1px solid #d1d5db; }
 
-        /* Icone Freccia */
-        .arrow-up { stroke: #10b981; }
-        .arrow-down { stroke: #ef4444; }
-
-        /* Ombra per il grafico */
-        .bar-shadow {
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-            transition: filter 0.3s;
-        }
-        
-        .bar-shadow:hover {
-            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
-        }
-        
-        /* Legenda sotto il grafico */
-        .chart-legend {
-            display: flex;
-            justify-content: center;
-            margin-top: 1rem;
-            gap: 20px;
-            padding: 10px;
-            background-color: #f9fafb;
-            border-radius: 8px;
+        /* Stile per i tab */
+        .tab-button {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-weight: 600;
+            color: #6b7280;
+            transition: color 0.2s;
         }
 
-        .legend-item {
-            display: flex;
-            align-items: center;
-            font-size: 14px;
+        .tab-button.active {
+            border-color: #06b6d4; /* Ciano per tab attivo */
+            color: #06b6d4;
         }
 
-        .legend-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 4px;
-            margin-right: 8px;
-            border: 1px solid #d1d5db;
+        /* --- STILI DI STAMPA PDF (MEDIA PRINT) --- */
+        @media print {
+            /* Nascondi elementi non necessari alla stampa/PDF */
+            header, .tab-navigation, .tab-button, .export-button {
+                display: none !important;
+            }
+            /* Mostra SOLO la tab attiva, nascondendo le altre */
+            .tab-content {
+                display: none !important;
+            }
+            .tab-content:not(.hidden) {
+                display: block !important;
+            }
+            /* Rimuovi ombre e bordi superflui per una stampa più pulita */
+            .p-4, .md\:p-8 { padding: 0 !important; }
+            .shadow-lg, .border { box-shadow: none !important; border: none !important; }
+            .rounded-xl { border-radius: 0 !important; }
+
+            /* Assicura che l'SVG (grafico) sia ben visibile */
+            .main-chart {
+                max-width: 100%;
+                height: auto; /* Permette all'altezza di scalare correttamente */
+            }
         }
     </style>
 </head>
@@ -120,133 +76,22 @@
     <div class="max-w-7xl mx-auto">
         <header class="mb-8 p-4 bg-white rounded-xl shadow-lg border border-gray-200">
             <h1 class="text-3xl md:text-4xl font-extrabold text-[#06b6d4]">Ricavi Mercato Retail</h1>
-            <p class="text-lg text-gray-600 mt-1">Analisi Performance YTD 2025 e Comparativa Storica</p>
+            <p class="text-lg text-gray-600 mt-1">Dashboard Unificata: Riepilogo e Dettaglio Banche Dati</p>
         </header>
 
-        <!-- 1. Tabella Dati (Spostata in Alto) -->
-        <div class="p-6 bg-white rounded-xl border border-gray-300 shadow-lg overflow-x-auto mb-12">
-            <h2 class="text-2xl font-bold mb-4 text-[#1f2937]">Dati Ricavi YTD 2025 (Valori Assoluti e Variazioni Percentuali)</h2>
-            <table class="data-table w-full text-sm rounded-lg overflow-hidden border border-gray-300">
-                <thead>
-                    <tr>
-                        <th class="min-w-[120px]">Mercato Retail</th>
-                        <th class="min-w-[120px]">Ricavi ytd 2025 (€)</th>
-                        <th class="min-w-[120px]">Rev Bdgt ytd 2025 (€)</th>
-                        <th class="min-w-[120px]">Ricavi 2025 vs Rev Bdgt</th>
-                        <th class="min-w-[120px]">Ricavi ytd 2024 (€)</th>
-                        <th class="min-w-[120px]">Ricavi 2025 vs Ricavi 2024 (YoY)</th>
-                        <th class="min-w-[120px]">Ricavi ytd 2023 (€)</th>
-                        <th class="min-w-[120px]">Ricavi 2024 vs Ricavi 2023</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="row-bd">
-                        <td class="font-semibold text-gray-800">Banche Dati</td>
-                        <td id="table-bd-r25" class="text-gray-700">5.205.461</td>
-                        <td class="text-gray-700">4.985.667</td>
-                        <td class="positive">+4,4%</td>
-                        <td id="table-bd-r24" class="text-gray-700">5.237.104</td>
-                        <td class="negative" id="table-bd-yoy">-0,6%</td>
-                        <td class="text-gray-700">4.878.403</td>
-                        <td class="positive">+7,4%</td>
-                    </tr>
-                    <tr class="row-lei">
-                        <td class="font-semibold text-gray-800">Servizio LEI</td>
-                        <td id="table-lei-r25" class="text-gray-700">6.416.069</td>
-                        <td class="text-gray-700">6.114.801</td>
-                        <td class="positive">+4,9%</td>
-                        <td id="table-lei-r24" class="text-gray-700">5.862.879</td>
-                        <td class="positive" id="table-lei-yoy">+9,4%</td>
-                        <td class="text-gray-700">5.220.127</td>
-                        <td class="positive">+12,3%</td>
-                    </tr>
-                    <tr class="row-total">
-                        <td class="text-gray-800">Totale</td>
-                        <td class="text-gray-800">11.621.530</td>
-                        <td class="text-gray-800">11.100.468</td>
-                        <td class="positive">+4,7%</td>
-                        <td class="text-gray-800">11.099.983</td>
-                        <td class="positive">+4,7%</td>
-                        <td class="text-gray-800">10.098.530</td>
-                        <td class="positive">+9,9%</td>
-                    </tr>
-                </tbody>
-            </table>
+        <!-- Navigazione a Tab -->
+        <div class="flex border-b border-gray-200 mb-8 bg-white rounded-xl shadow-lg tab-navigation">
+            <button class="tab-button active" onclick="showTab('tab-riepilogo')">Riepilogo Mercato Retail</button>
+            <button class="tab-button" onclick="showTab('tab-dettaglio')">Dettaglio Banche Dati</button>
         </div>
 
-
-        <!-- 2. Sezione Indicatori di Performance (KPI) -->
-        <div id="kpi-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
-            <!-- Totale Ricavi Card -->
-            <div id="total-kpi-card" class="p-6 bg-[#f3f4f6] rounded-xl border border-gray-300 shadow-md transition duration-300 hover:shadow-gray-400 kpi-card-wrapper">
-                <div class="kpi-card-content">
-                    <span id="total-copy-feedback" class="copy-feedback-text">Copiato!</span>
-                    <p class="text-sm font-semibold text-gray-500 uppercase">Ricavi Totali YTD 2025</p>
-                    <p id="total-revenue" class="text-4xl font-bold text-teal-600 mt-2">--</p>
-                    <div class="mt-4 flex justify-between items-center">
-                        <p class="text-sm text-gray-700">Vs Budget 2025:</p>
-                        <p id="total-vs-budget" class="text-lg font-semibold text-green-600">--</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- KPI 1: Banche Dati Performance -->
-            <div id="bd-kpi-card" class="p-6 bg-[#f3f4f6] rounded-xl border border-gray-300 shadow-md transition duration-300 hover:shadow-gray-400 kpi-card-wrapper">
-                <div class="kpi-card-content">
-                     <span id="bd-copy-feedback" class="copy-feedback-text">Copiato!</span>
-                    <p class="text-md font-semibold text-[#06b6d4] mb-1 uppercase">Banche Dati</p>
-                    <p class="text-xl text-gray-500">Ricavi YTD 2025</p>
-                    <p id="bd-revenue-value" class="text-3xl font-bold mt-1 text-gray-800">--</p>
-                    
-                    <div class="mt-3 pt-3 border-t border-gray-300 flex justify-between items-center">
-                        <div>
-                            <p class="text-sm text-gray-600">Crescita vs 2024 (YoY)</p>
-                            <div class="flex items-center space-x-2 mt-1">
-                                <i id="bd-arrow" data-lucide="arrow-up" class="w-5 h-5 arrow-up"></i>
-                                <p id="bd-growth-value" class="text-2xl font-bold positive-text">--</p>
-                            </div>
-                        </div>
-                        <div>
-                            <p class="text-xs text-gray-500 text-right">Ricavi YTD 2024</p>
-                            <p id="bd-prev-revenue-value" class="text-sm font-mono text-gray-700 mt-1 text-right">--</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- KPI 2: Servizio LEI Performance -->
-            <div id="lei-kpi-card" class="p-6 bg-[#f3f4f6] rounded-xl border border-gray-300 shadow-md transition duration-300 hover:shadow-gray-400 kpi-card-wrapper">
-                <div class="kpi-card-content">
-                    <span id="lei-copy-feedback" class="copy-feedback-text">Copiato!</span>
-                    <p class="text-md font-semibold text-[#06b6d4] mb-1 uppercase">Servizio LEI</p>
-                    <p class="text-xl text-gray-500">Ricavi YTD 2025</p>
-                    <p id="lei-revenue-value" class="text-3xl font-bold mt-1 text-gray-800">--</p>
-
-                    <div class="mt-3 pt-3 border-t border-gray-300 flex justify-between items-center">
-                        <div>
-                            <p class="text-sm text-gray-600">Crescita vs 2024 (YoY)</p>
-                            <div class="flex items-center space-x-2 mt-1">
-                                <i id="lei-arrow" data-lucide="arrow-up" class="w-5 h-5 arrow-up"></i>
-                                <p id="lei-growth-value" class="text-2xl font-bold positive-text">--</p>
-                            </div>
-                        </div>
-                        <div>
-                            <p class="text-xs text-gray-500 text-right">Ricavi YTD 2024</p>
-                            <p id="lei-prev-revenue-value" class="text-sm font-mono text-gray-700 mt-1 text-right">--</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <!-- Contenuto delle Tab -->
+        <div id="tab-riepilogo" class="tab-content">
+            <!-- Contenuto della Dashboard di Riepilogo (Vecchio index.html) -->
         </div>
-        
-        <!-- 3. Grafico a Barre (Principale) -->
-        <div id="chart-full-card" class="p-6 bg-white rounded-xl border border-gray-300 shadow-lg mb-12">
-            <!-- Pulsante di download rimosso -->
-            <div id="chart-container" class="w-full h-96">
-                <svg id="main-chart" style="height: 100%; width: 100%;"></svg>
-            </div>
-            <!-- Legenda D3 iniettata qui dal codice JS -->
-            <div id="chart-legend-container" class="chart-legend"></div>
+
+        <div id="tab-dettaglio" class="tab-content hidden">
+            <!-- Contenuto della Dashboard Dettaglio Banche Dati (Vecchio index_bd.html) -->
         </div>
 
 
@@ -255,328 +100,453 @@
     <div id="tooltip" class="tooltip opacity-0"></div>
 
     <script>
-        // Dati forniti - Uso gli stessi dati estratti dal tuo input
-        const rawData = [
-            { mercato: "Banche Dati", "Ricavi ytd 2025": 5205461, "Rev Bdgt ytd 2025": 4985667, "Ricavi 2025 vs Rev Bdgt": 0.044, "Ricavi ytd 2024": 5237104, "Ricavi 2025 vs Ricavi 2024": -0.006, "Ricavi ytd 2023": 4878403, "Ricavi 2024 vs Ricavi 2023": 0.074 },
-            { mercato: "Servizio LEI", "Ricavi ytd 2025": 6416069, "Rev Bdgt ytd 2025": 6114801, "Ricavi 2025 vs Rev Bdgt": 0.049, "Ricavi ytd 2024": 5862879, "Ricavi 2025 vs Ricavi 2024": 0.094, "Ricavi ytd 2023": 5220127, "Ricavi 2024 vs Ricavi 2023": 0.123 },
-            { mercato: "Totale", "Ricavi ytd 2025": 11621530, "Rev Bdgt ytd 2025": 11100468, "Ricavi 2025 vs Rev Bdgt": 0.047, "Ricavi ytd 2024": 11099983, "Ricavi 2025 vs Ricavi 2024": 0.047, "Ricavi ytd 2023": 10098530, "Ricavi 2024 vs Ricavi 2023": 0.099 },
+        // --- DATA SETS ---
+        
+        // 1. Dati Riepilogo Mercato Retail (Da index.html)
+        const fixedDataRiepilogo = [
+            { Mercato: "Banche Dati", "Ricavi ytd 2025": 5205461, "Rev Bdgt ytd 2025": 4985667, "Ricavi 2025 vs Rev Bdgt": 0.044, "Ricavi ytd 2024": 5237104, "Ricavi 2025 vs Ricavi 2024": -0.006, "Ricavi ytd 2023": 4878403, "Ricavi 2024 vs Ricavi 2023": 0.074 },
+            { Mercato: "Servizio LEI", "Ricavi ytd 2025": 6416069, "Rev Bdgt ytd 2025": 6114801, "Ricavi 2025 vs Rev Bdgt": 0.049, "Ricavi ytd 2024": 5862879, "Ricavi 2025 vs Ricavi 2024": 0.094, "Ricavi ytd 2023": 5220127, "Ricavi 2024 vs Ricavi 2023": 0.123 },
+            { Mercato: "Totale", "Ricavi ytd 2025": 11621530, "Rev Bdgt ytd 2025": 11100468, "Ricavi 2025 vs Rev Bdgt": 0.047, "Ricavi ytd 2024": 11099983, "Ricavi 2025 vs Ricavi 2024": 0.047, "Ricavi ytd 2023": 10098530, "Ricavi 2024 vs Ricavi 2023": 0.099 },
         ];
 
-        // Colori delle barre più vivaci per il light mode
-        // Mantenuti i colori brillanti
-        const palette = ["#0ea5e9", "#facc15", "#fb7185"]; // Sky, Yellow, Rose (Più luminosi)
-        
-        // Imposta il locale per usare il punto come separatore migliaia e la virgola come decimale
-        const formatLocale = d3.formatLocale({
-            "decimal": ",",
-            "thousands": ".",
-            "grouping": [3],
-            "currency": ["€", ""]
-        });
-
-        // Nuovi formati usando il locale italiano/europeo corretto
-        const formatCurrencyMillions = formatLocale.format(".1f"); // Formato in milioni (per KPI e asse Y)
-        const formatCurrencyBarValue = formatLocale.format(",.2f"); // Formato per valori sopra le barre con separatore migliaia e due decimali
-        const formatCurrency = formatLocale.format(",.0f"); // Formato valuta intera con separatore migliaia
-        const formatPercent = d3.format("+.1%"); // La percentuale non ha bisogno di locale
-        
-        // ESTRAZIONE DATI PER GRAFICO SUL TOTALE
-        const totalData = rawData.find(d => d.mercato === 'Totale');
-        const chartData = [
-            { year: "2025 YTD", revenue: totalData["Ricavi ytd 2025"] / 1000000, color: palette[0] },
-            { year: "2024 YTD", revenue: totalData["Ricavi ytd 2024"] / 1000000, color: palette[1] },
-            { year: "2023 YTD", revenue: totalData["Ricavi ytd 2023"] / 1000000, color: palette[2] }
+        // 2. Dati Dettaglio Banche Dati (Da index_bd.html)
+        const fixedDataBD = [
+            { Mercato: "consultazione", "Ricavi ytd 2025": 1393059, "Rev Bdgt ytd 2025": 1320562, "Ricavi 2025 vs Rev Bdgt": 0.055, "Ricavi ytd 2024": 1320586, "Ricavi 2025 vs Ricavi 2024": 0.055, "Ricavi ytd 2023": 1312808, "Ricavi 2024 vs Ricavi 2023": 0.006 },
+            { Mercato: "canoni", "Ricavi ytd 2025": 133080, "Rev Bdgt ytd 2025": 129933, "Ricavi 2025 vs Rev Bdgt": 0.024, "Ricavi ytd 2024": 141078, "Ricavi 2025 vs Ricavi 2024": -0.057, "Ricavi ytd 2023": 134501, "Ricavi 2024 vs Ricavi 2023": 0.049 },
+            { Mercato: "pratiche", "Ricavi ytd 2025": 3679322, "Rev Bdgt ytd 2025": 3535172, "Ricavi 2025 vs Rev Bdgt": 0.041, "Ricavi ytd 2024": 3775441, "Ricavi 2025 vs Ricavi 2024": -0.025, "Ricavi ytd 2023": 3431094, "Ricavi 2024 vs Ricavi 2023": 0.100 },
+            { Mercato: "Totale Banche Dati", "Ricavi ytd 2025": 5205461, "Rev Bdgt ytd 2025": 4985667, "Ricavi 2025 vs Rev Bdgt": 0.044, "Ricavi ytd 2024": 5237104, "Ricavi 2025 vs Ricavi 2024": -0.006, "Ricavi ytd 2023": 4878403, "Ricavi 2024 vs Ricavi 2023": 0.074 },
         ];
 
-        // --- Funzioni di utilità per la copia (MANTENUTE SOLO PER KPI) ---
+
+        // --- VARIBILI DI FORMATTAZIONE ---
+        const palette = ["#0ea5e9", "#facc15", "#fb7185"]; // Sky, Yellow, Rose
+        const formatLocale = d3.formatLocale({ "decimal": ",", "thousands": ".", "grouping": [3], "currency": ["€", ""] });
+        // Formato uniforme a due decimali per entrambi i grafici
+        const formatCurrencyMillions = formatLocale.format(".2f"); 
+        const formatCurrencyBarValue = formatLocale.format(",.0f"); 
+        const formatCurrency = formatLocale.format(",.0f"); 
+        const formatPercent = d3.format("+.1%"); 
+
+        // --- CORE LOGIC PER AGGIORNARE LE DASHBOARD ---
+
+        // Funzione per attivare la stampa del contenuto della tab attiva
+        function exportToPdf() {
+            // Aggiungo un timeout per garantire che il DOM abbia finito il rendering dopo il cambio di tab.
+            setTimeout(() => {
+                window.print();
+            }, 100);
+        }
+
+        // Funzione per mostrare la tab selezionata
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
+
+            // Ri-disegna il grafico e aggiorna i dati ogni volta che si cambia tab per gestire il resize SVG
+            // Chiamiamo la funzione centrale updateDashboard(tabId) che gestisce la logica per entrambe le tab.
+            updateDashboard(tabId);
+        }
         
-        // Funzione di fallback per la copia di testo (usata come metodo primario per il testo KPI)
-        function fallbackCopyTextToClipboard(text) {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.position = "fixed";
-            textArea.style.opacity = 0;
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-                const successful = document.execCommand('copy');
-                if (!successful) {
-                    console.warn('Copia testo non riuscita con execCommand.');
+        // Funzione per generare il markup comune per le dashboard
+        function generateDashboardMarkup(data, isRiepilogo) {
+            const tableHeaders = isRiepilogo ? `
+                <th class="min-w-[120px]">Mercato Retail</th>
+                <th class="min-w-[120px]">Ricavi ytd 2025 (€)</th>
+                <th class="min-w-[120px]">Rev Bdgt ytd 2025 (€)</th>
+                <th class="min-w-[120px]">Ricavi 2025 vs Rev Bdgt</th>
+                <th class="min-w-[120px]">Ricavi ytd 2024 (€)</th>
+                <th class="min-w-[120px]">Ricavi 2025 vs Ricavi 2024 (YoY)</th>
+                <th class="min-w-[120px]">Ricavi ytd 2023 (€)</th>
+                <th class="min-w-[120px]">Ricavi 2024 vs Ricavi 2023</th>
+            ` : `
+                <th class="min-w-[120px]">Banche Dati</th>
+                <th class="min-w-[120px]">Ricavi ytd 2025 (€)</th>
+                <th class="min-w-[120px]">Rev Bdgt ytd 2025 (€)</th>
+                <th class="min-w-[120px]">Ricavi 2025 vs Rev Bdgt</th>
+                <th class="min-w-[120px]">Ricavi ytd 2024 (€)</th>
+                <th class="min-w-[120px]">Ricavi 2025 vs Ricavi 2024 (YoY)</th>
+                <th class="min-w-[120px]">Ricavi ytd 2023 (€)</th>
+                <th class="min-w-[120px]">Ricavi 2024 vs Ricavi 2023</th>
+            `;
+
+            let kpiCount = isRiepilogo ? 3 : 4;
+            let kpiGridClass = isRiepilogo ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 lg:grid-cols-4';
+
+            const markup = `
+                <!-- Pulsante Esporta: CORREZIONE: Chiamata diretta a exportToPdf() -->
+                <button class="export-button mb-6 px-6 py-2 bg-indigo-500 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-600 transition duration-150 flex items-center gap-2" onclick="exportToPdf()">
+                    <i data-lucide="file-text" class="w-5 h-5"></i> Esporta in PDF
+                </button>
+
+                <!-- Tabella Dati -->
+                <div class="p-6 bg-white rounded-xl border border-gray-300 shadow-lg overflow-x-auto mb-12">
+                    <h2 class="text-2xl font-bold mb-4 text-[#1f2937]">Dati Ricavi YTD 2025</h2>
+                    <table class="data-table w-full text-sm rounded-lg overflow-hidden border border-gray-300">
+                        <thead>
+                            <tr class="data-table-headers-row">${tableHeaders}</tr>
+                        </thead>
+                        <tbody class="data-table-body"></tbody>
+                    </table>
+                </div>
+
+                <!-- Sezione Indicatori di Performance (KPI) -->
+                <div class="kpi-container grid ${kpiGridClass} gap-6 mb-12">
+                    ${isRiepilogo ? `
+                        <div id="kpi-total" class="p-6 bg-[#f3f4f6] rounded-xl border border-gray-300 shadow-md transition duration-300 hover:shadow-gray-400">
+                            <p class="text-sm font-semibold text-gray-500 uppercase">Ricavi Totali YTD 2025</p>
+                            <p id="total-revenue" class="text-4xl font-bold text-teal-600 mt-2">--</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <p class="text-sm text-gray-700">Vs Budget 2025:</p>
+                                <p id="total-vs-budget" class="text-lg font-semibold text-green-600">--</p>
+                            </div>
+                        </div>
+                        <div id="kpi-bd" class="p-6 bg-[#f3f4f6] rounded-xl border border-gray-300 shadow-md transition duration-300 hover:shadow-gray-400">
+                            <p class="text-md font-semibold text-[#06b6d4] mb-1 uppercase">Banche Dati</p>
+                            <p class="text-xl text-gray-500">Ricavi YTD 2025</p>
+                            <p id="bd-revenue-value" class="text-3xl font-bold mt-1 text-gray-800">--</p>
+                            <div class="mt-3 pt-3 border-t border-gray-300 flex justify-between items-center">
+                                <div>
+                                    <p class="text-sm text-gray-600">Crescita vs 2024 (YoY)</p>
+                                    <div class="flex items-center space-x-2 mt-1">
+                                        <i id="bd-arrow" data-lucide="arrow-up" class="w-5 h-5 arrow-up"></i>
+                                        <p id="bd-growth-value" class="text-2xl font-bold positive-text">--</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 text-right">Ricavi YTD 2024</p>
+                                    <p id="bd-prev-revenue-value" class="text-sm font-mono text-gray-700 mt-1 text-right">--</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="kpi-lei" class="p-6 bg-[#f3f4f6] rounded-xl border border-gray-300 shadow-md transition duration-300 hover:shadow-gray-400">
+                            <p class="text-md font-semibold text-[#06b6d4] mb-1 uppercase">Servizio LEI</p>
+                            <p class="text-xl text-gray-500">Ricavi YTD 2025</p>
+                            <p id="lei-revenue-value" class="text-3xl font-bold mt-1 text-gray-800">--</p>
+                            <div class="mt-3 pt-3 border-t border-gray-300 flex justify-between items-center">
+                                <div>
+                                    <p class="text-sm text-gray-600">Crescita vs 2024 (YoY)</p>
+                                    <div class="flex items-center space-x-2 mt-1">
+                                        <i id="lei-arrow" data-lucide="arrow-up" class="w-5 h-5 arrow-up"></i>
+                                        <p id="lei-growth-value" class="text-2xl font-bold positive-text">--</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 text-right">Ricavi YTD 2024</p>
+                                    <p id="lei-prev-revenue-value" class="text-sm font-mono text-gray-700 mt-1 text-right">--</p>
+                                </div>
+                            </div>
+                        </div>
+                    ` : `
+                        <div id="kpi-consultazione" class="p-6 bg-[#f3f4f6] rounded-xl border border-gray-300 shadow-md transition duration-300 hover:shadow-gray-400">
+                            <p class="text-sm font-semibold text-gray-500 uppercase">Consultazione YTD 2025</p>
+                            <p id="consultazione-revenue" class="text-3xl font-bold text-teal-600 mt-2">--</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <p class="text-sm text-gray-700">Crescita vs 2024:</p>
+                                <p id="consultazione-vs-2024" class="text-lg font-semibold text-green-600">--</p>
+                            </div>
+                        </div>
+
+                        <div id="kpi-canoni" class="p-6 bg-[#f3f4f6] rounded-xl border border-gray-300 shadow-md transition duration-300 hover:shadow-gray-400">
+                            <p class="text-sm font-semibold text-gray-500 uppercase">Canoni YTD 2025</p>
+                            <p id="canoni-revenue" class="text-3xl font-bold text-teal-600 mt-2">--</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <p class="text-sm text-gray-700">Crescita vs 2024:</p>
+                                <p id="canoni-vs-2024" class="text-lg font-semibold text-green-600">--</p>
+                            </div>
+                        </div>
+
+                        <div id="kpi-pratiche" class="p-6 bg-[#f3f4f6] rounded-xl border border-gray-300 shadow-md transition duration-300 hover:shadow-gray-400">
+                            <p class="text-sm font-semibold text-gray-500 uppercase">Pratiche YTD 2025</p>
+                            <p id="pratiche-revenue" class="text-3xl font-bold text-teal-600 mt-2">--</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <p class="text-sm text-gray-700">Crescita vs 2024:</p>
+                                <p id="pratiche-vs-2024" class="text-lg font-semibold text-green-600">--</p>
+                            </div>
+                        </div>
+                        
+                        <div id="kpi-total-bd" class="p-6 bg-[#e0f2f1] rounded-xl border border-gray-300 shadow-lg transition duration-300 hover:shadow-gray-400">
+                            <p class="text-sm font-semibold text-gray-600 uppercase">Totale Banche Dati YTD 2025</p>
+                            <p id="total-bd-revenue" class="text-4xl font-bold text-[#06b6d4] mt-2">--</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <p class="text-sm text-gray-700">Vs Budget 2025:</p>
+                                <p id="total-bd-vs-budget" class="text-lg font-semibold text-green-600">--</p>
+                            </div>
+                        </div>
+                    `}
+                </div>
+
+                <!-- Grafico a Barre -->
+                <div class="chart-full-card p-6 bg-white rounded-xl border border-gray-300 shadow-lg mb-12">
+                    <div class="chart-container w-full h-96">
+                        <svg class="main-chart" style="height: 100%; width: 100%;"></svg>
+                    </div>
+                    <div class="chart-legend-container chart-legend"></div>
+                </div>
+            `;
+            return markup;
+        }
+
+        // Funzione per inizializzare e popolare il DOM con il markup
+        function initializeDashboards() {
+            document.getElementById('tab-riepilogo').innerHTML = generateDashboardMarkup(fixedDataRiepilogo, true);
+            document.getElementById('tab-dettaglio').innerHTML = generateDashboardMarkup(fixedDataBD, false);
+
+            // Avvia la dashboard Riepilogo
+            updateDashboard('tab-riepilogo');
+        }
+
+        // --- Aggiornamento Dati e Logica Grafico ---
+
+        function updateDashboard(tabId) {
+            const isRiepilogo = tabId === 'tab-riepilogo';
+            const data = isRiepilogo ? fixedDataRiepilogo : fixedDataBD;
+
+            // Selettori basati sulla tab corrente
+            const currentTab = d3.select(`#${tabId}`);
+            const tableBody = currentTab.select(".data-table-body");
+
+            // 1. Aggiorna la Tabella Dati
+            tableBody.selectAll("tr").remove(); 
+
+            data.forEach((d) => {
+                let rowClass;
+                if (d.Mercato.includes('Totale')) {
+                    rowClass = 'row-total';
+                } else if (d.Mercato === 'Banche Dati' || d.Mercato === 'consultazione' || d.Mercato === 'pratiche') {
+                    rowClass = 'row-bd row-consultazione row-pratiche'; 
+                } else if (d.Mercato === 'Servizio LEI' || d.Mercato === 'canoni') {
+                    rowClass = 'row-lei row-canoni';
                 }
-                return successful;
-            } catch (err) {
-                console.error('Copia testo fallita con execCommand:', err);
-                return false;
-            } finally {
-                 document.body.removeChild(textArea);
+
+                const r25vsBdg = formatPercent(d["Ricavi 2025 vs Rev Bdgt"]);
+                const r25vsR24 = formatPercent(d["Ricavi 2025 vs Ricavi 2024"]);
+                const r24vsR23 = formatPercent(d["Ricavi 2024 vs Ricavi 2023"]);
+
+                const is25vsBdgPositive = d["Ricavi 2025 vs Rev Bdgt"] >= 0 ? 'positive' : 'negative';
+                const is25vsR24Positive = d["Ricavi 2025 vs Ricavi 2024"] >= 0 ? 'positive' : 'negative';
+                const is24vsR23Positive = d["Ricavi 2024 vs Ricavi 2023"] >= 0 ? 'positive' : 'negative';
+
+                const row = tableBody.append("tr").attr("class", rowClass);
+
+                row.append("td").attr("class", "font-semibold text-gray-800 px-4").text(d.Mercato.charAt(0).toUpperCase() + d.Mercato.slice(1));
+                row.append("td").attr("class", "text-gray-700 px-4").text(formatCurrency(d["Ricavi ytd 2025"]));
+                row.append("td").attr("class", "text-gray-700 px-4").text(formatCurrency(d["Rev Bdgt ytd 2025"]));
+                row.append("td").attr("class", "px-4 " + is25vsBdgPositive).text(r25vsBdg);
+                row.append("td").attr("class", "text-gray-700 px-4").text(formatCurrency(d["Ricavi ytd 2024"]));
+                row.append("td").attr("class", "px-4 " + is25vsR24Positive).text(r25vsR24);
+                row.append("td").attr("class", "text-gray-700 px-4").text(formatCurrency(d["Ricavi ytd 2023"]));
+                row.append("td").attr("class", "px-4 " + is24vsR23Positive).text(r24vsR23);
+            });
+
+
+            // 2. Aggiorna i KPI
+            if (isRiepilogo) {
+                const totalData = data.find(d => d.Mercato === 'Totale');
+                const bdData = data.find(d => d.Mercato === 'Banche Dati');
+                const leiData = data.find(d => d.Mercato === 'Servizio LEI');
+
+                updateKPIsRiepilogo(totalData, bdData, leiData, currentTab);
+                
+                // Grafico Riepilogo (Totale Ricavi Anno su Anno)
+                const chartData = [
+                    { year: "2025 YTD", revenue: totalData["Ricavi ytd 2025"] / 1000000, color: palette[0] },
+                    { year: "2024 YTD", revenue: totalData["Ricavi ytd 2024"] / 1000000, color: palette[1] },
+                    { year: "2023 YTD", revenue: totalData["Ricavi ytd 2023"] / 1000000, color: palette[2] }
+                ];
+                drawBarChart(currentTab, chartData, "Andamento Ricavi Totali YTD (in Milioni €)", "Comparazione Ricavi Mercato Retail Anno su Anno", "year", "revenue", isRiepilogo);
+
+            } else { // Dettaglio Banche Dati
+                const totalBDData = data.find(d => d.Mercato === 'Totale Banche Dati');
+                const consultazioneData = data.find(d => d.Mercato === 'consultazione');
+                const canoniData = data.find(d => d.Mercato === 'canoni');
+                const praticheData = data.find(d => d.Mercato === 'pratiche');
+
+                updateKPIsDettaglio(totalBDData, consultazioneData, canoniData, praticheData, currentTab);
+
+                // GRAFICO CORRETTO: Totale Banche Dati vs Anni Precedenti
+                const chartData = [
+                    { year: "2025 YTD", revenue: totalBDData["Ricavi ytd 2025"] / 1000000, color: palette[0] },
+                    { year: "2024 YTD", revenue: totalBDData["Ricavi ytd 2024"] / 1000000, color: palette[1] },
+                    { year: "2023 YTD", revenue: totalBDData["Ricavi ytd 2023"] / 1000000, color: palette[2] }
+                ];
+                drawBarChart(currentTab, chartData, "Andamento Ricavi Totale Banche Dati YTD (in Milioni €)", "Comparazione Ricavi Banche Dati Anno su Anno", "year", "revenue", isRiepilogo);
+
             }
+            lucide.createIcons();
         }
-        
-        // Funzione per copiare il report testuale della Card (KPI)
-        async function copyKpiReport(cardId, title, feedbackId) {
-            const feedbackElem = document.getElementById(feedbackId);
-            const lines = [];
 
-            // Estraggo i dati per costruire il testo da copiare
-            if (cardId === 'total-kpi-card') {
-                lines.push(`*** Report KPI - ${title} ***`);
-                lines.push(`Ricavi YTD 2025: ${document.getElementById('total-revenue').innerText}`);
-                lines.push(`Vs Budget 2025: ${document.getElementById('total-vs-budget').innerText}`);
-            } else if (cardId === 'bd-kpi-card') {
-                lines.push(`*** Report KPI - ${title} ***`);
-                lines.push(`Ricavi YTD 2025: ${document.getElementById('bd-revenue-value').innerText}`);
-                lines.push(`Crescita vs 2024 (YoY): ${document.getElementById('bd-growth-value').innerText}`);
-                lines.push(`Ricavi YTD 2024: ${document.getElementById('bd-prev-revenue-value').innerText}`);
-            } else if (cardId === 'lei-kpi-card') {
-                lines.push(`*** Report KPI - ${title} ***`);
-                lines.push(`Ricavi YTD 2025: ${document.getElementById('lei-revenue-value').innerText}`);
-                lines.push(`Crescita vs 2024 (YoY): ${document.getElementById('lei-growth-value').innerText}`);
-                lines.push(`Ricavi YTD 2024: ${document.getElementById('lei-prev-revenue-value').innerText}`);
-            }
-
-            const textToCopy = lines.join('\n');
-
-            // Esegui la copia tramite il metodo più robusto (execCommand)
-            const successful = fallbackCopyTextToClipboard(textToCopy);
-
-            // Feedback visivo immediato SOLO se la copia ha avuto successo
-            if (successful) {
-                feedbackElem.style.display = 'inline';
-                setTimeout(() => {
-                    feedbackElem.style.display = 'none';
-                }, 1500);
-            }
-        }
-        
-        // FUNZIONE DOWNLOAD RImossa
-        
-
-        // --- Inizializzazione Logica KPI ---
-        
-        function updateKPIs() {
+        // Funzione per aggiornare i KPI del Riepilogo
+        function updateKPIsRiepilogo(totalData, bdData, leiData, tab) {
             // Totale Card
-            if(totalData) {
-                document.getElementById('total-revenue').innerText = `${formatCurrencyMillions(totalData["Ricavi ytd 2025"] / 1000000)} M€`;
-                const vsBudget = totalData["Ricavi 2025 vs Rev Bdgt"];
-                const vsBudgetElem = document.getElementById('total-vs-budget');
-                vsBudgetElem.innerText = formatPercent(vsBudget);
-                vsBudgetElem.classList.remove('text-green-400', 'text-red-500');
-                vsBudgetElem.classList.add(vsBudget >= 0 ? 'text-green-600' : 'text-red-600');
-            }
+            tab.select("#total-revenue").text(`${formatCurrencyMillions(totalData["Ricavi ytd 2025"] / 1000000)} M€`);
+            const vsBudget = totalData["Ricavi 2025 vs Rev Bdgt"];
+            tab.select("#total-vs-budget").text(formatPercent(vsBudget))
+                .classed('text-green-600', vsBudget >= 0)
+                .classed('text-red-600', vsBudget < 0);
 
             // Banche Dati
-            const bdData = rawData.find(d => d.mercato === 'Banche Dati');
-            if (bdData) {
-                const growth = bdData["Ricavi 2025 vs Ricavi 2024"];
-                const growthText = formatPercent(growth);
-                const isPositive = growth >= 0;
-
-                // Aggiorna KPI Card
-                document.getElementById('bd-revenue-value').innerText = `€ ${formatCurrency(bdData["Ricavi ytd 2025"])}`;
-                document.getElementById('bd-prev-revenue-value').innerText = `€ ${formatCurrency(bdData["Ricavi ytd 2024"])}`;
-                
-                const growthElem = document.getElementById('bd-growth-value');
-                growthElem.innerText = growthText;
-                growthElem.classList.remove('positive-text', 'negative-text');
-                growthElem.classList.add(isPositive ? 'positive-text' : 'negative-text');
-
-                const arrowElem = document.getElementById('bd-arrow');
-                arrowElem.setAttribute('data-lucide', isPositive ? 'trending-up' : 'trending-down');
-                arrowElem.classList.remove('arrow-up', 'arrow-down');
-                arrowElem.classList.add(isPositive ? 'arrow-up' : 'arrow-down');
-            }
+            const bdGrowth = bdData["Ricavi 2025 vs Ricavi 2024"];
+            const bdIsPositive = bdGrowth >= 0;
+            tab.select("#bd-revenue-value").text(`€ ${formatCurrency(bdData["Ricavi ytd 2025"])}`);
+            tab.select("#bd-prev-revenue-value").text(`€ ${formatCurrency(bdData["Ricavi ytd 2024"])}`);
+            tab.select("#bd-growth-value").text(formatPercent(bdGrowth))
+                .classed('positive-text', bdIsPositive).classed('negative-text', !bdIsPositive);
+            tab.select("#bd-arrow").attr('data-lucide', bdIsPositive ? 'trending-up' : 'trending-down')
+                .classed('arrow-up', bdIsPositive).classed('arrow-down', !bdIsPositive);
 
             // Servizio LEI
-            const leiData = rawData.find(d => d.mercato === 'Servizio LEI');
-            if (leiData) {
-                const growth = leiData["Ricavi 2025 vs Ricavi 2024"];
-                const growthText = formatPercent(growth);
-                const isPositive = growth >= 0;
-                
-                // Aggiorna KPI Card
-                document.getElementById('lei-revenue-value').innerText = `€ ${formatCurrency(leiData["Ricavi ytd 2025"])}`;
-                document.getElementById('lei-prev-revenue-value').innerText = `€ ${formatCurrency(leiData["Ricavi ytd 2024"])}`;
-
-                const growthElem = document.getElementById('lei-growth-value');
-                growthElem.innerText = growthText;
-                growthElem.classList.remove('positive-text', 'negative-text');
-                growthElem.classList.add(isPositive ? 'positive-text' : 'negative-text');
-
-                const arrowElem = document.getElementById('lei-arrow');
-                arrowElem.setAttribute('data-lucide', isPositive ? 'trending-up' : 'trending-down');
-                arrowElem.classList.remove('arrow-up', 'arrow-down');
-                arrowElem.classList.add(isPositive ? 'arrow-up' : 'arrow-down');
-            }
-            
-            // Renderizza le icone Lucide dopo aver aggiornato i dati
-            lucide.createIcons();
-            
-            // Aggiorna i valori nella tabella HTML (quelli con l'ID)
-            document.getElementById('table-bd-r25').innerText = formatCurrency(bdData["Ricavi ytd 2025"]);
-            document.getElementById('table-bd-r24').innerText = formatCurrency(bdData["Ricavi ytd 2024"]);
-            document.getElementById('table-lei-r25').innerText = formatCurrency(leiData["Ricavi ytd 2025"]);
-            document.getElementById('table-lei-r24').innerText = formatCurrency(leiData["Ricavi ytd 2024"]);
+            const leiGrowth = leiData["Ricavi 2025 vs Ricavi 2024"];
+            const leiIsPositive = leiGrowth >= 0;
+            tab.select("#lei-revenue-value").text(`€ ${formatCurrency(leiData["Ricavi ytd 2025"])}`);
+            tab.select("#lei-prev-revenue-value").text(`€ ${formatCurrency(leiData["Ricavi ytd 2024"])}`);
+            tab.select("#lei-growth-value").text(formatPercent(leiGrowth))
+                .classed('positive-text', leiIsPositive).classed('negative-text', !leiIsPositive);
+            tab.select("#lei-arrow").attr('data-lucide', leiIsPositive ? 'trending-up' : 'trending-down')
+                .classed('arrow-up', bdIsPositive).classed('arrow-down', !leiIsPositive);
         }
-        // --- Fine Logica KPI ---
 
-        // Funzione per disegnare il Grafico a Barre (Singole)
-        function drawGroupedBarChart(data) {
-            const container = d3.select("#chart-container");
-            const svg = d3.select("#main-chart");
-            const containerWidth = container.node().clientWidth;
-            const containerHeight = container.node().clientHeight;
+        // Funzione per aggiornare i KPI del Dettaglio Banche Dati
+        function updateKPIsDettaglio(totalBDData, consultazioneData, canoniData, praticheData, tab) {
+            // Totale Banche Dati Card
+            tab.select("#total-bd-revenue").text(`€ ${formatCurrency(totalBDData["Ricavi ytd 2025"])}`);
+            const totalVsBudget = totalBDData["Ricavi 2025 vs Rev Bdgt"];
+            tab.select("#total-bd-vs-budget").text(formatPercent(totalVsBudget))
+                .classed('text-green-600', totalVsBudget >= 0)
+                .classed('text-red-600', totalVsBudget < 0);
+
+            // Funzione helper per le card dei sottosegmenti
+            const updateSubSegmentCard = (idPrefix, data) => {
+                const growth = data["Ricavi 2025 vs Ricavi 2024"];
+                const isPositive = growth >= 0;
+
+                tab.select(`#${idPrefix}-revenue`).text(`€ ${formatCurrency(data["Ricavi ytd 2025"])}`);
+                
+                tab.select(`#${idPrefix}-vs-2024`).text(formatPercent(growth))
+                    .classed('text-green-600', isPositive)
+                    .classed('text-red-600', !isPositive);
+            };
+
+            updateSubSegmentCard('consultazione', consultazioneData);
+            updateSubSegmentCard('canoni', canoniData);
+            updateSubSegmentCard('pratiche', praticheData);
+        }
+
+
+        // Funzione universale per disegnare il Grafico a Barre
+        function drawBarChart(tab, data, mainTitle, subTitle, xKey, yKey, isRiepilogo) {
+            const container = tab.select(".chart-container");
+            const svg = tab.select(".main-chart");
             
-            // Margini per la leggibilità (più spazio in alto per il titolo)
-            const margin = { top: 50, right: 30, bottom: 60, left: 70 };
+            // Larghezza disponibile dal contenitore
+            const containerNode = container.node();
+            if (!containerNode) return; 
+            const containerWidth = containerNode.clientWidth;
+            
+            // ALTEZZA FISSA: Forzo l'altezza a 350px per evitare la compressione
+            const SVG_HEIGHT = 350; 
+            
+            // Margini: 140px per l'asse Y e il suo testo
+            const margin = { top: 60, right: 30, bottom: 60, left: 140 }; 
             const width = containerWidth - margin.left - margin.right;
-            const height = containerHeight - margin.top - margin.bottom;
+            const height = SVG_HEIGHT - margin.top - margin.bottom;
 
-            // Rimuovi chart precedente se presente
             svg.selectAll("*").remove();
-            d3.select("#chart-legend-container").selectAll("*").remove(); // Rimuove la vecchia legenda HTML
+            tab.select(".chart-legend-container").selectAll("*").remove(); 
             
-            svg.attr("width", containerWidth)
-               .attr("height", containerHeight);
+            // Imposta l'altezza fissa e la larghezza reattiva per l'SVG
+            svg.attr("width", containerWidth).attr("height", SVG_HEIGHT);
                
             // Aggiunge il titolo e il sottotitolo direttamente all'SVG
-            svg.append("text")
-                .attr("x", margin.left)
-                .attr("y", 20)
-                .attr("fill", "#1f2937") // Scuro per il titolo
-                .attr("font-size", "18px")
-                .attr("font-weight", "bold")
-                .text("Andamento Ricavi Totali YTD (in Milioni €)");
+            svg.append("text").attr("x", margin.left).attr("y", 20).attr("fill", "#1f2937").attr("font-size", "18px").attr("font-weight", "bold").text(mainTitle);
+            svg.append("text").attr("x", margin.left).attr("y", 40).attr("fill", "#6b7280").attr("font-size", "12px").text(subTitle);
 
-            svg.append("text")
-                .attr("x", margin.left)
-                .attr("y", 40)
-                .attr("fill", "#6b7280") // Grigio per il sottotitolo
-                .attr("font-size", "12px")
-                .text("Comparazione Ricavi 2025 vs Anni Precedenti");
+            const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
-
-            const g = svg.append("g")
-                         .attr("transform", `translate(${margin.left},${margin.top})`);
-
-            // Scala X (Anni) - Aggiunto padding esterno per staccare le barre dai bordi
+            // Scala X 
             const x = d3.scaleBand()
-                .domain(data.map(d => d.year))
+                .domain(data.map(d => d[xKey]))
                 .rangeRound([0, width])
-                .paddingInner(0.6) // Meno padding interno (barre meno "cicciotte")
-                .paddingOuter(0.3); // Aggiunto padding esterno (staccate dai margini)
+                .paddingInner(0.6)
+                .paddingOuter(0.3); 
 
-            // Scala Y (Ricavi)
-            const y = d3.scaleLinear()
-                .domain([0, d3.max(data, d => d.revenue) * 1.1])
-                .rangeRound([height, 0]);
+            // Scala Y 
+            const y = d3.scaleLinear().domain([0, d3.max(data, d => d[yKey]) * 1.1]).rangeRound([height, 0]);
 
-            // Assi
-            // Asse X (Nomi degli anni nell'SVG) - Rimosso per usare la legenda HTML, ma tenuto per la posizione
-            g.append("g")
-                .attr("class", "axis-x")
-                .attr("transform", `translate(0,${height})`)
-                .call(d3.axisBottom(x).tickSize(0).tickFormat("")) // Rimuove il testo dall'asse X
-                .selectAll("text");
-            
-            g.select(".axis-x").selectAll("line, path").remove(); // Rimuovi linee assi per look pulito
+            // Formato UNIFORME a DUE decimali per entrambi i grafici
+            const tickFormat = d => formatCurrencyMillions(d) + " M€";
 
-            g.append("g")
-                .attr("class", "axis-y")
-                // Formato sull'asse Y usa il punto per le migliaia (M€)
-                .call(d3.axisLeft(y).ticks(5).tickFormat(d => formatCurrencyMillions(d) + " M€"))
+            const barValueFormat = formatLocale.format(",.2f"); // Due decimali per il valore sopra la barra
+
+
+            // Assi e Griglia
+            g.append("g").attr("class", "axis-x").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x).tickSize(0).tickFormat("")).selectAll("text");
+            g.select(".axis-x").selectAll("line, path").remove();
+
+            // Asse Y: posizionamento corretto
+            g.append("g").attr("class", "axis-y").call(d3.axisLeft(y).ticks(5).tickFormat(tickFormat))
                 .selectAll("text")
-                .attr("fill", "#4b5563") // Grigio scuro per leggibilità
-                .attr("class", "text-sm");
+                .attr("fill", "#4b5563")
+                .attr("class", "text-sm")
+                // Allineamento a destra delle etichette e padding per separare dal dominio
+                .attr("text-anchor", "end"); 
 
-            g.select(".axis-y").select(".domain").remove(); // Rimuovi linea dell'asse y
+            // Aggiungi un padding esplicito ai tick dell'asse Y per garantire separazione
+            g.select(".axis-y").call(d3.axisLeft(y).ticks(5).tickFormat(tickFormat).tickPadding(10));
 
-            // Griglia Orizzontale (opzionale per effetto futuristico)
-            g.selectAll(".grid-line").data(y.ticks(5))
-                .enter().append("line")
-                .attr("class", "grid-line")
-                .attr("x1", 0)
-                .attr("x2", width)
-                .attr("y1", y)
-                .attr("y2", y)
-                .attr("stroke", "#e5e7eb") // Grigio molto chiaro per la griglia
-                .attr("stroke-dasharray", "2,2"); // Linea tratteggiata
+
+            g.select(".axis-y").select(".domain").remove();
+
+            g.selectAll(".grid-line").data(y.ticks(5)).enter().append("line").attr("class", "grid-line").attr("x1", 0).attr("x2", width).attr("y1", y).attr("y2", y).attr("stroke", "#e5e7eb").attr("stroke-dasharray", "2,2");
 
             // Barre
-            const bars = g.selectAll("rect")
-                .data(data)
-                .enter().append("rect")
-                .attr("class", "bar-shadow") // Applica la classe per ombra
-                .attr("x", d => x(d.year))
-                .attr("y", height) // Inizia dal basso per l'animazione
+            const bars = g.selectAll("rect").data(data).enter().append("rect")
+                .attr("class", "bar-shadow")
+                .attr("x", d => x(d[xKey]))
+                .attr("y", height)
                 .attr("width", x.bandwidth())
-                .attr("height", 0) // Inizia da altezza zero per l'animazione
+                .attr("height", 0)
                 .attr("fill", d => d.color)
-                .attr("rx", 6) // Angoli arrotondati aumentati
-                .attr("ry", 6)
-                .style("cursor", "pointer")
-                .on("mouseover", function(event, d) {
-                    d3.select(this).attr("opacity", 0.9);
-                    d3.select("#tooltip")
-                        .style("opacity", 1)
-                        // Tooltip usa il punto per le migliaia
-                        .html(`<strong>${d.year}</strong><br/>${formatCurrencyBarValue(d.revenue)} M€`)
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 28) + "px");
-                })
-                .on("mouseout", function() {
-                    d3.select(this).attr("opacity", 1);
-                    d3.select("#tooltip").style("opacity", 0);
-                })
-                .transition() // Animazione 'futuristica'
-                .duration(1200) // Animazione leggermente più veloce
-                .delay((d, i) => i * 150)
-                .attr("y", d => y(d.revenue))
-                .attr("height", d => height - y(d.revenue));
+                .attr("rx", 6).attr("ry", 6).style("cursor", "pointer")
+                .on("mouseover", function(event, d) { d3.select(this).attr("opacity", 0.9); d3.select("#tooltip").style("opacity", 1).html(`<strong>${d[xKey]}</strong><br/>${barValueFormat(d[yKey])} M€`).style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 28) + "px"); })
+                .on("mouseout", function() { d3.select(this).attr("opacity", 1); d3.select("#tooltip").style("opacity", 0); })
+                .transition().duration(1200).delay((d, i) => i * 150)
+                .attr("y", d => y(d[yKey])).attr("height", d => height - y(d[yKey]));
 
-            // Aggiungi i valori sopra le barre
-            g.selectAll(".bar-label")
-                .data(data)
-                .enter().append("text")
+            // Valori sopra le barre
+            g.selectAll(".bar-label").data(data).enter().append("text")
                 .attr("class", "bar-label")
-                .attr("x", d => x(d.year) + x.bandwidth() / 2)
-                .attr("y", height) // Inizia dal basso per l'animazione
-                .attr("dy", "-0.5em") // Sposta leggermente più in alto sopra la barra
-                .attr("text-anchor", "middle")
-                .attr("fill", "#1f2937") // Scuro per la leggibilità
-                .attr("font-size", "12px") // Aumentato leggermente il font
-                .attr("font-weight", "bold")
-                // Valore sopra la barra usa il punto per le migliaia (M€ con 2 decimali)
-                .text(d => formatCurrencyBarValue(d.revenue)) 
-                .transition()
-                .duration(1200)
-                .delay((d, i) => i * 150)
-                .attr("y", d => y(d.revenue));
+                .attr("x", d => x(d[xKey]) + x.bandwidth() / 2)
+                .attr("y", height).attr("dy", "-0.5em").attr("text-anchor", "middle").attr("fill", "#1f2937").attr("font-size", "12px").attr("font-weight", "bold")
+                .text(d => barValueFormat(d[yKey])) 
+                .transition().duration(1200).delay((d, i) => i * 150)
+                .attr("y", d => y(d[yKey]));
                 
-            // INIETTA LEGGENDA HTML SOTTO IL GRAFICO
-            const legendContainer = document.getElementById('chart-legend-container');
+            // Legenda HTML
+            const legendContainer = tab.select('.chart-legend-container').node();
+            legendContainer.innerHTML = ''; // Pulisci prima di aggiungere
             data.forEach(d => {
                 const item = document.createElement('div');
                 item.className = 'legend-item';
-                item.innerHTML = `
-                    <div class="legend-color" style="background-color: ${d.color};"></div>
-                    <span>${d.year}</span>
-                `;
+                item.innerHTML = `<div class="legend-color" style="background-color: ${d.color};"></div><span>${d[xKey]}</span>`;
                 legendContainer.appendChild(item);
             });
         }
 
-        // Gestione della reattività
+
+        // Gestione dell'avvio e reattività
         window.addEventListener('resize', () => {
-            drawGroupedBarChart(chartData);
+            const activeTabContent = document.querySelector('.tab-content:not(.hidden)');
+            if (activeTabContent) {
+                updateDashboard(activeTabContent.id);
+            }
         });
         
-        // Disegna il grafico principale all'avvio
         window.onload = function() {
-            updateKPIs(); // Carica i nuovi KPI
-            drawGroupedBarChart(chartData); // Disegna il grafico a barre
+            initializeDashboards();
         };
-        
     </script>
 </body>
 </html>
